@@ -1,0 +1,101 @@
+# C/C++ object and binary files
+*.o
+*.obj
+*.lo
+*.lai
+*.lai
+*.pch
+*.gch
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+*.exe
+*.out
+
+# Build directories
+build/
+build-*/
+cmake-build-*/
+_bin/
+bin/
+lib/
+lib64/
+dist/
+install/
+_deploy/
+
+# CMake generated files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+compile_commands.json
+
+# IDE and editor folders/files
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+.vs/
+*.swp
+*.swo
+*~
+*.tmp
+*.log
+
+# Visual Studio specific
+*.suo
+*.user
+*.userosscache
+*.VC.db
+*.VC.VC.opendb
+*.vcxproj.user
+
+# Xcode
+*.xcworkspace
+*.xcuserstate
+*.xcodeproj/project.xcworkspace/
+DerivedData/
+
+# Package managers / dependency caches
+vcpkg_installed/
+packages/
+buildtrees/
+downloads/
+.conan/
+conanbuildinfo.*
+conaninfo.txt
+conanfile.lock
+
+# Coverage / profiler / sanitizer outputs
+*.gcda
+*.gcno
+*.profraw
+*.profdata
+gmon.out
+coverage/
+
+# Documentation / generated files
+doc/
+docs/
+docs/html/
+doxygen/
+
+# Language server / indexes / tags
+*.clangd
+tags
+.tags
+cscope.out
+
+# macOS / Windows artifacts
+.DS_Store
+Thumbs.db
+
+# Misc
+*.bak
+*.tmp
+*.old
+*.orig

@@ -1,0 +1,16 @@
+# 1. Start by inheriting one of the standard styles
+# Available built-in styles: LLVM, Google, Chromium, Mozilla, WebKit, Microsoft
+BasedOnStyle: Microsoft
+
+# 2. Override specific rules (optional)
+# Example: Force break before the opening brace for functions
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  BeforeElse: true
+
+# Example: Set indentation to 2 spaces
+IndentWidth: 2
+
+# Example: Set column limit
+ColumnLimit: 120
