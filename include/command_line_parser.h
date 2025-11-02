@@ -41,7 +41,7 @@ public:
     options.add_options()(name, description, cxxopts::value<std::string>()->default_value(default_value));
   }
 
-  cxxopts::ParseResult parse(int argc, char *argv[])
+  cxxopts::ParseResult parse(int argc, const char *const argv[])
   {
     auto result = options.parse(argc, argv);
 

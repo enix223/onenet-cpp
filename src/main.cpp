@@ -1,51 +1,65 @@
+#include "command_line_parser.h"
 #include "mqtt/async_client.h"
-#include <cxxopts.hpp>
+#include "onenet_client.h"
+#include <atomic>
+#include <condition_variable>
+#include <csignal>
 #include <fmt/base.h>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 
-const std::string SERVER_URL{"tls://mqttstls.heclouds.com:8883"};
-const std::string CA_CERT_PATH = "onenet-ca.pem";
+static std::mutex gShutdownMu;
+static std::condition_variable gShutdownCv;
+static std::atomic<bool> gShutdownRequest{false};
 
-std::string buildToken()
+void signalHandler(int signalNum)
 {
-  return "hi";
+  if (signalNum != SIGINT && signalNum != SIGTERM)
+  {
+    return;
+  }
+  gShutdownRequest = true;
+  try
+  {
+    gShutdownCv.notify_one();
+  }
+  catch (std::exception &e)
+  {
+  }
 }
 
 int main(int argc, const char *const argv[])
 {
-  cxxopts::Options options("onenet", "onenet client");
-  options.add_options()                                                     // add options
-      ("p,product-id", "product id", cxxopts::value<std::string>())         // product id
-      ("s,product-secret", "product secret", cxxopts::value<std::string>()) // product secret
-      ("d,device-name", "device name", cxxopts::value<std::string>())       // device name
-      ("t,device-secret", "device secret", cxxopts::value<std::string>())   // device secret
-      ("h,help", "help");
-  auto opts = options.parse(argc, argv);
-  if (opts.count("help"))
-  {
-    fmt::println(options.help());
-    return 0;
-  }
+  cl::Logger logger{cl::LogLevel::INFO};
+  cl::CommandLineParser argparser{"onenet", "onenet client"};
+  argparser.add_mandatory<std::string>("p,product-id", "product id");
+  argparser.add_mandatory<std::string>("s,product-secret", "product secret");
+  argparser.add_mandatory<std::string>("d,device-name", "device name");
+  argparser.add_mandatory<std::string>("t,device-secret", "device secret");
+  auto opts = argparser.parse(argc, argv);
 
   auto pid = opts["product-id"].as<std::string>();
   auto ps = opts["product-secret"].as<std::string>();
   auto dn = opts["device-name"].as<std::string>();
   auto ds = opts["device-secret"].as<std::string>();
-  fmt::println("product id = {}, product secret = {}, device name = {}, device secret = {}", pid, ps, dn, ds);
+  logger.info("product id = {}, product secret = {}, device name = {}, device secret = {}", pid, ps, dn, ds);
 
-  // ssl options
-  auto sslopts = mqtt::ssl_options_builder()
-                     .trust_store(CA_CERT_PATH) // set ca cert trust store
-                     .enable_server_cert_auth(true)
-                     .finalize();
+  if (std::signal(SIGINT, signalHandler) == SIG_ERR || std::signal(SIGTERM, signalHandler) == SIG_ERR)
+  {
+    logger.error("failed to register signal handler");
+    return 1;
+  }
 
-  // connect options
-  auto token = buildToken();
-  auto connOpts =
-      mqtt::connect_options_builder().clean_session(true).ssl(sslopts).user_name(pid).password(token).finalize();
-  mqtt::async_client client{SERVER_URL, dn};
-  client.connect(connOpts);
+  cl::OneNetClient client{pid, ps, dn, ds};
+  client.connect();
+
+  {
+    std::unique_lock<std::mutex> lock{gShutdownMu};
+    gShutdownCv.wait(lock, [] { return gShutdownRequest.load(); });
+  }
+
+  logger.info("shutdown client");
 
   return 0;
 }

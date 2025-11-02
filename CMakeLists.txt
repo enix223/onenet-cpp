@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.14.0)
 project(onenet VERSION 0.1.0 LANGUAGES C CXX)
 
+# 1. Set the default CXX flags (C++ compiler)
+# Add -g (debug symbols) and -O0 (no optimization) for the Debug build type.
+set(CMAKE_CXX_FLAGS_DEBUG           "-g -O0")
+# 2. Add debug symbols for 'Release with Debug Info' 
+# (Good for optimized code where you still want a stack trace)
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "-g") 
+# 3. Set the standard optimization flags for Release builds
+set(CMAKE_CXX_FLAGS_RELEASE         "-O3 -DNDEBUG")
+
 set(CXX_STANDARD 11)
 set(PAHO_WITH_MQTT_C ON)         # Instructs it to manage the C dependency internally
 set(PAHO_BUILD_STATIC TRUE)      # Builds static targets (better for FetchContent)
