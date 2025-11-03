@@ -1,6 +1,6 @@
 # 1. Start by inheriting one of the standard styles
 # Available built-in styles: LLVM, Google, Chromium, Mozilla, WebKit, Microsoft
-BasedOnStyle: Microsoft
+BasedOnStyle: Google
 
 # 2. Override specific rules (optional)
 # Example: Force break before the opening brace for functions
@@ -13,4 +13,4 @@ BraceWrapping:
 IndentWidth: 2
 
 # Example: Set column limit
-ColumnLimit: 120
+ColumnLimit: 80
