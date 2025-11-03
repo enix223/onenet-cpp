@@ -11,7 +11,11 @@
 #include "command_line_parser.h"
 #include "mqtt/async_client.h"
 #include "onenet_client.h"
-#include "url_uril_libcurl.h"
+#ifdef CL_ONENET_USE_LIBCURL
+#include "url_util_libcurl.h"
+#else
+#include "url_util_httplib.h"
+#endif
 
 static std::mutex g_shutdown_mu;
 static std::condition_variable g_shutdown_cv;
@@ -57,7 +61,11 @@ int main(int argc, const char* const argv[])
   }
 
   std::shared_ptr<cl::Base64> base64 = std::make_shared<cl::Base64Openssl>();
+#if CL_ONENET_USE_LIBCURL
   std::shared_ptr<cl::UrlUtil> urlUtil = std::make_shared<cl::UrlUtilCurl>();
+#else
+  std::shared_ptr<cl::UrlUtil> urlUtil = std::make_shared<cl::UrlUtilHttplib>();
+#endif
 
   cl::OneNetClient client{da, pid, ps, dn, ds, base64, urlUtil};
   client.Connect();

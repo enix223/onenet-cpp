@@ -19,12 +19,14 @@ set(PAHO_BUILD_STATIC TRUE)
 set(PAHO_BUILD_SHARED FALSE)
 # disable tl expected unit test
 set(EXPECTED_BUILD_TESTS OFF)
+# disable using zstd
+set(HTTPLIB_USE_ZSTD_IF_AVAILABLE OFF)
 set(
   SRC_FILES
   src/main.cpp
   src/onenet_client.cpp
   src/base64_openssl.cpp
-  src/url_uril_libcurl.cpp
+  src/url_util_httplib.cpp
 )
 
 include(FetchContent)
@@ -63,11 +65,11 @@ FetchContent_MakeAvailable(tl_expected)
 
 # Fetch and make libcurl available
 FetchContent_Declare(
-    libcurl
-    GIT_REPOSITORY https://github.com/curl/curl.git
-    GIT_TAG        curl-8_16_0
+    httplib
+    GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
+    GIT_TAG v0.27.0
 )
-FetchContent_MakeAvailable(libcurl)
+FetchContent_MakeAvailable(httplib)
 
 add_executable(onenet ${SRC_FILES})
 
@@ -76,11 +78,11 @@ target_include_directories(onenet PRIVATE ${eclipse-paho-mqtt-cpp_SOURCE_DIR}/in
 target_include_directories(onenet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${tl_expected_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${cxxopts_SOURCE_DIR}/include)
-target_include_directories(onenet PRIVATE ${libcurl_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${fmt_SOURCE_DIR}/include)
+target_include_directories(onenet PRIVATE ${httplib_SOURCE_DIR})
 
 target_link_libraries(onenet PUBLIC paho-mqttpp3-static)
 target_link_libraries(onenet PUBLIC expected)
 target_link_libraries(onenet PUBLIC cxxopts)
-target_link_libraries(onenet PUBLIC libcurl)
+target_link_libraries(onenet PUBLIC httplib)
 target_link_libraries(onenet PUBLIC fmt)

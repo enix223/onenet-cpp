@@ -1,3 +1,5 @@
+#if 0
+
 #include <curl/curl.h>
 
 #include <memory>
@@ -24,3 +26,5 @@ class UrlUtilCurl : public UrlUtil {
   SmartCurlHandle curl_;
 };
 }  // namespace cl
+
+#endif

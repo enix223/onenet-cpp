@@ -1,3 +1,5 @@
+#if 0
+
 #include "url_uril_libcurl.h"
 
 auto CurlDeleter = [](cl::CurlHandle handle) {
@@ -38,3 +40,5 @@ tl::expected<std::string, std::string> cl::UrlUtilCurl::UrlUnEscape(
 
   return decoded_string;
 }
+
+#endif
