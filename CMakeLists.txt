@@ -10,13 +10,15 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g")
 # 3. Set the standard optimization flags for Release builds
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-set(CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 11)
 # Instructs it to manage the C dependency internally
 set(PAHO_WITH_MQTT_C ON)
 # Builds static targets (better for FetchContent)
 set(PAHO_BUILD_STATIC TRUE)
 # Prevents shared library build confusion
 set(PAHO_BUILD_SHARED FALSE)
+# disable tl expected unit test
+set(EXPECTED_BUILD_TESTS OFF)
 set(
   SRC_FILES
   src/main.cpp

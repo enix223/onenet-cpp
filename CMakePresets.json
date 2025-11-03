@@ -10,14 +10,7 @@
                 "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
                 "CMAKE_C_COMPILER": "/usr/bin/gcc",
                 "CMAKE_CXX_COMPILER": "/usr/bin/g++",
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CXX_STANDARD": "17",
-                "PAHO_WITH_MQTT_C": "ON",
-                "PAHO_BUILD_STATIC": "TRUE",
-                "PAHO_BUILD_SHARED": "FALSE",
-                "CMAKE_POLICY_DEFAULT_CMP0077": "NEW",
-                "CMAKE_POLICY_DEFAULT_CMP0135": "NEW",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+                "CMAKE_BUILD_TYPE": "Debug"
             }
         }
     ]

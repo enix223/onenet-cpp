@@ -29,7 +29,7 @@ class OneNetClient {
 
   void Disconnect();
 
-  void UploadProperties(std::map<std::string, std::any> properties);
+  void UploadProperties(std::map<std::string, std::string> properties);
 
  private:
   std::shared_ptr<cl::Base64> base64_;
@@ -60,8 +60,6 @@ class OneNetClient {
       const std::string& content) const;
 
   tl::expected<std::string, std::string> BuildToken() const;
-
-  std::string BytesTohex(const std::vector<unsigned char>& bytes) const;
 
   std::vector<unsigned char> HmacSha1(const std::string& key,
                                       const std::string& message) const;

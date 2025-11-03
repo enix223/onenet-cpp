@@ -2,12 +2,10 @@
 
 #include <mqtt/client.h>
 #include <openssl/hmac.h>
+#include <openssl/sha.h>
 
 #include <chrono>
 #include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
 
 const std::string cl::OneNetClient::kServerUrl{
     "mqtts://mqttstls.heclouds.com:8883"};
@@ -96,7 +94,7 @@ void cl::OneNetClient::Connect()
 void cl::OneNetClient::Disconnect() {}
 
 void cl::OneNetClient::UploadProperties(
-    std::map<std::string, std::any> properties)
+    std::map<std::string, std::string> properties)
 {
 }
 
@@ -157,36 +155,15 @@ tl::expected<std::string, std::string> cl::OneNetClient::BuildToken() const
   return token;
 }
 
-std::string cl::OneNetClient::BytesTohex(
-    const std::vector<unsigned char>& bytes) const
-{
-  std::stringstream ss;
-  ss << std::hex << std::setfill('0');
-  for (const auto& byte : bytes) {
-    // Output each byte as two hexadecimal characters
-    ss << std::setw(2) << static_cast<int>(byte);
-  }
-  return ss.str();
-}
-
 std::vector<unsigned char> cl::OneNetClient::HmacSha1(
     const std::string& key, const std::string& message) const
 {
-  // 1. Determine the required buffer size for the output (SHA1 is 20 bytes/160
-  // bits) EVP_MAX_MD_SIZE is a safe upper limit, but SHA1_DIGEST_LENGTH (20) is
-  // specific.
-  unsigned int digest_len = EVP_MAX_MD_SIZE;
+  unsigned int digest_len = SHA_DIGEST_LENGTH;
   std::vector<unsigned char> digest(digest_len);
 
-  // 2. Call the simplified OpenSSL HMAC function
-  // HMAC(EVP_sha1(), key_data, key_length, message_data, message_length,
-  // output_buffer, output_length_ptr)
   HMAC(EVP_sha1(), key.c_str(), static_cast<int>(key.length()),
        reinterpret_cast<const unsigned char*>(message.c_str()),
        static_cast<int>(message.length()), digest.data(), &digest_len);
-
-  // 3. Resize the vector to the actual digest length (20 bytes for SHA1)
-  digest.resize(digest_len);
 
   return digest;
 }
