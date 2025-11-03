@@ -3,21 +3,25 @@ project(onenet VERSION 0.1.0 LANGUAGES C CXX)
 
 # 1. Set the default CXX flags (C++ compiler)
 # Add -g (debug symbols) and -O0 (no optimization) for the Debug build type.
-set(CMAKE_CXX_FLAGS_DEBUG           "-g -O0")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 # 2. Add debug symbols for 'Release with Debug Info' 
 # (Good for optimized code where you still want a stack trace)
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO  "-g") 
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g") 
 # 3. Set the standard optimization flags for Release builds
-set(CMAKE_CXX_FLAGS_RELEASE         "-O3 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
 set(CXX_STANDARD 11)
-set(PAHO_WITH_MQTT_C ON)         # Instructs it to manage the C dependency internally
-set(PAHO_BUILD_STATIC TRUE)      # Builds static targets (better for FetchContent)
-set(PAHO_BUILD_SHARED FALSE)     # Prevents shared library build confusion
+# Instructs it to manage the C dependency internally
+set(PAHO_WITH_MQTT_C ON)
+# Builds static targets (better for FetchContent)
+set(PAHO_BUILD_STATIC TRUE)
+# Prevents shared library build confusion
+set(PAHO_BUILD_SHARED FALSE)
 set(
   SRC_FILES
   src/main.cpp
   src/onenet_client.cpp
+  src/base64_openssl.cpp
 )
 
 include(FetchContent)
@@ -46,14 +50,24 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(fmt)
 
+# Fetch and make tl::expected available
+FetchContent_Declare(
+    tl_expected
+    GIT_REPOSITORY https://github.com/TartanLlama/expected.git
+    GIT_TAG v1.3.1
+)
+FetchContent_MakeAvailable(tl_expected)
+
 add_executable(onenet ${SRC_FILES})
 
 target_include_directories(onenet PRIVATE ${eclipse-paho-mqtt-cpp_SOURCE_DIR}/externals/paho-mqtt-c/src)
 target_include_directories(onenet PRIVATE ${eclipse-paho-mqtt-cpp_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(onenet PRIVATE ${tl_expected_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${cxxopts_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${fmt_SOURCE_DIR}/include)
 
 target_link_libraries(onenet PUBLIC paho-mqttpp3-static)
+target_link_libraries(onenet PUBLIC expected)
 target_link_libraries(onenet PUBLIC cxxopts)
 target_link_libraries(onenet PUBLIC fmt)

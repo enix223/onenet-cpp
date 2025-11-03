@@ -7,6 +7,7 @@
 #include <mutex>
 #include <sstream>
 
+#include "base64_openssl.h"
 #include "command_line_parser.h"
 #include "mqtt/async_client.h"
 #include "onenet_client.h"
@@ -54,7 +55,8 @@ int main(int argc, const char* const argv[])
     return 1;
   }
 
-  cl::OneNetClient client{da, pid, ps, dn, ds};
+  std::shared_ptr<cl::Base64> base64 = std::make_shared<cl::Base64Openssl>();
+  cl::OneNetClient client{da, pid, ps, dn, ds, base64};
   client.Connect();
 
   {

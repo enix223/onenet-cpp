@@ -1,0 +1,40 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        // Task to configure CMake (e.g., if you switched to Presets)
+        {
+            "label": "CMake: Configure Project",
+            "type": "cmake",
+            "command": "configure",
+            "detail": "Runs CMake configure using the active preset."
+        },
+        // Task to build the executable
+        {
+            "label": "CMake: Build Executable",
+            "type": "cmake",
+            "command": "build",
+            "targets": [
+                "onenet"
+            ],
+            "detail": "Builds the 'onenet' target.",
+            "dependsOn": [
+                "CMake: Configure Project"
+            ],
+            "presentation": {
+                "reveal": "silent",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "PREP DEBUG LAUNCH",
+            "dependsOn": [
+                "Load Environment Variables",
+                "CMake: Build Executable"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        }
+    ]
+}

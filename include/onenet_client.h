@@ -4,19 +4,21 @@
 #include <map>
 #include <string>
 
+#include "base64.h"
 #include "logger.h"
 #include "mqtt/client.h"
 
 namespace cl {
 class OneNetClient {
  public:
-  static const std::string SERVER_URL;
-  static const std::string CA_CERT_PATH;
-  static const std::string PERSIST_DIR;
+  static const std::string kServerUrl;
+  static const std::string kCaCertPath;
+  static const std::string kSigningMethod;
+  static const std::string kSigningAlgVersion;
 
   OneNetClient(bool deviceLevelAuth, std::string productId,
                std::string productSecret, std::string deviceName,
-               std::string deviceSecret);
+               std::string deviceSecret, std::shared_ptr<cl::Base64> base64);
 
   ~OneNetClient() = default;
 
@@ -27,6 +29,8 @@ class OneNetClient {
   void UploadProperties(std::map<std::string, std::any> properties);
 
  private:
+  std::shared_ptr<cl::Base64> base64_;
+
   /// @brief mqtt client
   mqtt::client mqtt_client_;
 
@@ -45,6 +49,7 @@ class OneNetClient {
   /// @brief logger
   cl::Logger logger_;
 
+  /// @brief enable device level auth or product level auth
   bool device_level_auth_;
 
   std::string BuildToken() const;

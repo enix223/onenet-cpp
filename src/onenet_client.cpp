@@ -6,20 +6,24 @@
 #include <chrono>
 #include <iomanip>
 
-const std::string cl::OneNetClient::SERVER_URL{
+const std::string cl::OneNetClient::kServerUrl{
     "mqtts://mqttstls.heclouds.com:8883"};
-const std::string cl::OneNetClient::CA_CERT_PATH = "onenet-ca.pem";
+const std::string cl::OneNetClient::kCaCertPath = "onenet-ca.pem";
+const std::string cl::OneNetClient::kSigningMethod = "sha1";
+const std::string cl::OneNetClient::kSigningAlgVersion = "2018-10-31";
 
 cl::OneNetClient::OneNetClient(bool deviceLevelAuth, std::string productId,
                                std::string productSecret,
-                               std::string deviceName, std::string deviceSecret)
+                               std::string deviceName, std::string deviceSecret,
+                               std::shared_ptr<cl::Base64> base64)
     : device_level_auth_(deviceLevelAuth),
       product_id_(productId),
       product_secret_(productSecret),
       device_name_(deviceName),
       device_secret_(deviceSecret),
       logger_{LogLevel::DEBUG},
-      mqtt_client_{SERVER_URL, deviceName}
+      mqtt_client_{kServerUrl, deviceName},
+      base64_(base64)
 {
 }
 
@@ -29,7 +33,7 @@ void cl::OneNetClient::Connect()
 
   // ssl options
   auto sslopts = mqtt::ssl_options_builder()
-                     .trust_store(CA_CERT_PATH)  // set ca cert trust store
+                     .trust_store(kCaCertPath)  // set ca cert trust store
                      .enable_server_cert_auth(true)
                      .finalize();
 
@@ -69,8 +73,15 @@ std::string cl::OneNetClient::BuildToken() const
                                               product_id_, device_name_)
                                 : fmt::format("products/{}", product_id_);
   auto secret = device_level_auth_ ? device_secret_ : product_secret_;
+  auto secretBytes = base64_->Decode(secret);
+  if (secretBytes.size() == 0) {
+    return "";
+  }
 
-  return "";
+  auto pending = std::to_string(et) + "\n" + kSigningMethod + "\n" + res +
+                 "\n" + kSigningAlgVersion;
+  auto signature = HmacSha1(secret, pending);
+  return signature;
 }
 
 std::string cl::OneNetClient::BytesTohex(
