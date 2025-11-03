@@ -10,7 +10,7 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g")
 # 3. Set the standard optimization flags for Release builds
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
 
-set(CXX_STANDARD 11)
+set(CXX_STANDARD 17)
 # Instructs it to manage the C dependency internally
 set(PAHO_WITH_MQTT_C ON)
 # Builds static targets (better for FetchContent)
@@ -22,6 +22,7 @@ set(
   src/main.cpp
   src/onenet_client.cpp
   src/base64_openssl.cpp
+  src/url_uril_libcurl.cpp
 )
 
 include(FetchContent)
@@ -58,6 +59,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(tl_expected)
 
+# Fetch and make libcurl available
+FetchContent_Declare(
+    libcurl
+    GIT_REPOSITORY https://github.com/curl/curl.git
+    GIT_TAG        curl-8_16_0
+)
+FetchContent_MakeAvailable(libcurl)
+
 add_executable(onenet ${SRC_FILES})
 
 target_include_directories(onenet PRIVATE ${eclipse-paho-mqtt-cpp_SOURCE_DIR}/externals/paho-mqtt-c/src)
@@ -65,9 +74,11 @@ target_include_directories(onenet PRIVATE ${eclipse-paho-mqtt-cpp_SOURCE_DIR}/in
 target_include_directories(onenet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${tl_expected_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${cxxopts_SOURCE_DIR}/include)
+target_include_directories(onenet PRIVATE ${libcurl_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${fmt_SOURCE_DIR}/include)
 
 target_link_libraries(onenet PUBLIC paho-mqttpp3-static)
 target_link_libraries(onenet PUBLIC expected)
 target_link_libraries(onenet PUBLIC cxxopts)
+target_link_libraries(onenet PUBLIC libcurl)
 target_link_libraries(onenet PUBLIC fmt)

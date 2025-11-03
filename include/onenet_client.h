@@ -3,22 +3,25 @@
 #include <any>
 #include <map>
 #include <string>
+#include <tl/expected.hpp>
 
 #include "base64.h"
 #include "logger.h"
 #include "mqtt/client.h"
+#include "url_util.h"
 
 namespace cl {
 class OneNetClient {
  public:
   static const std::string kServerUrl;
-  static const std::string kCaCertPath;
+  static const std::string kCaCert;
   static const std::string kSigningMethod;
   static const std::string kSigningAlgVersion;
 
   OneNetClient(bool deviceLevelAuth, std::string productId,
                std::string productSecret, std::string deviceName,
-               std::string deviceSecret, std::shared_ptr<cl::Base64> base64);
+               std::string deviceSecret, std::shared_ptr<cl::Base64> base64,
+               std::shared_ptr<cl::UrlUtil> urlUtil);
 
   ~OneNetClient() = default;
 
@@ -30,6 +33,7 @@ class OneNetClient {
 
  private:
   std::shared_ptr<cl::Base64> base64_;
+  std::shared_ptr<cl::UrlUtil> urlUtil_;
 
   /// @brief mqtt client
   mqtt::client mqtt_client_;
@@ -52,11 +56,14 @@ class OneNetClient {
   /// @brief enable device level auth or product level auth
   bool device_level_auth_;
 
-  std::string BuildToken() const;
+  tl::expected<std::string, std::string> BuildCaFile(
+      const std::string& content) const;
+
+  tl::expected<std::string, std::string> BuildToken() const;
 
   std::string BytesTohex(const std::vector<unsigned char>& bytes) const;
 
-  std::string HmacSha1(const std::string& key,
-                       const std::string& message) const;
+  std::vector<unsigned char> HmacSha1(const std::string& key,
+                                      const std::string& message) const;
 };
 }  // namespace cl

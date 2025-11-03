@@ -36,7 +36,8 @@ class Logger {
 
   // Template function for logging using fmt::format
   template <typename... Args>
-  void Log(LogLevel level, fmt::format_string<Args...> fmt, Args&&... args)
+  void Log(LogLevel level, fmt::format_string<Args...> fmt,
+           Args&&... args) const
   {
     if (level < min_level_) {
       return;  // Skip messages below the minimum level
@@ -69,25 +70,25 @@ class Logger {
 
   // Convenience wrapper methods
   template <typename... Args>
-  void Debug(fmt::format_string<Args...> fmt, Args&&... args)
+  void Debug(fmt::format_string<Args...> fmt, Args&&... args) const
   {
     Log(LogLevel::DEBUG, fmt, std::forward<Args>(args)...);
   }
 
   template <typename... Args>
-  void Info(fmt::format_string<Args...> fmt, Args&&... args)
+  void Info(fmt::format_string<Args...> fmt, Args&&... args) const
   {
     Log(LogLevel::INFO, fmt, std::forward<Args>(args)...);
   }
 
   template <typename... Args>
-  void Warn(fmt::format_string<Args...> fmt, Args&&... args)
+  void Warn(fmt::format_string<Args...> fmt, Args&&... args) const
   {
     Log(LogLevel::WARN, fmt, std::forward<Args>(args)...);
   }
 
   template <typename... Args>
-  void Error(fmt::format_string<Args...> fmt, Args&&... args)
+  void Error(fmt::format_string<Args...> fmt, Args&&... args) const
   {
     Log(LogLevel::ERROR, fmt, std::forward<Args>(args)...);
   }
