@@ -1,12 +1,13 @@
 #include "onenet_client.h"
 
-#include <json/json.h>
 #include <mqtt/client.h>
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 
 #include <chrono>
 #include <fstream>
+#include <nlohmann/json.hpp>
+#include <thread>
 
 const std::string cl::OneNetClient::kServerUrl{
     "mqtts://mqttstls.heclouds.com:8883"};
@@ -52,84 +53,24 @@ cl::OneNetClient::OneNetClient(bool deviceLevelAuth, std::string productId,
 
 void cl::OneNetClient::Connect()
 {
-  logger_.Info("start connecting");
-
-  auto caFile = BuildCaFile(kCaCert);
-  if (!caFile.has_value()) {
-    logger_.Error("failed to create ca file: {}", caFile.error());
+  if (worker_thread_ && worker_thread_->joinable()) {
+    logger_.Info("onenet mqtt thread already running...");
     return;
   }
 
-  // ssl options
-  auto sslopts =
-      mqtt::ssl_options_builder().trust_store(caFile.value()).finalize();
-
-  // connect options
-  auto token = BuildToken();
-  if (!token.has_value()) {
-    logger_.Error("failed to connect: {}", token.error());
-    return;
-  }
-  logger_.Debug("token = {}", token.value());
-  auto connOpts = mqtt::connect_options_builder()
-                      .automatic_reconnect(true)
-                      // MQTT 3.1.1
-                      .mqtt_version(4)
-                      .ssl(std::move(sslopts))
-                      .user_name(product_id_)
-                      .password(token.value())
-                      .finalize();
-
-  try {
-    auto rsp = mqtt_client_.connect(std::move(connOpts));
-    logger_.Info("connect ok");
-    if (!rsp.is_session_present()) {
-      logger_.Info("Subscribing to topics...");
-      std::vector<std::string> topics{
-          fmt::format("$sys/{}/{}/thing/property/post/reply", product_id_,
-                      device_name_),
-          fmt::format("$sys/{}/{}/thing/property/set", product_id_,
-                      device_name_),
-          fmt::format("$sys/{}/{}/thing/property/desired/get/reply",
-                      product_id_, device_name_),
-          fmt::format("$sys/{}/{}/thing/property/desired/delete/reply",
-                      product_id_, device_name_),
-          fmt::format("$sys/{}/{}/thing/property/get", product_id_,
-                      device_name_),
-          fmt::format("$sys/{}/{}/thing/event/post/reply", product_id_,
-                      device_name_),
-          // fmt::format("$sys/{}/{}/thing/service/+/invoke", product_id_,
-          //             device_name_),
-          fmt::format("$sys/{}/{}/thing/sub/property/get", product_id_,
-                      device_name_),
-          fmt::format("$sys/{}/{}/thing/sub/property/set", product_id_,
-                      device_name_),
-      };
-      std::vector<int> qos((int)topics.size(), 0);
-      mqtt_client_.subscribe(topics, qos);
-      logger_.Info("subscribe topics success");
-    }
-    else {
-      logger_.Info("session already present. Skipping subscribe.");
-    }
-
-    while (true) {
-      auto msg = mqtt_client_.consume_message();
-
-      if (msg) {
-        logger_.Info("receive message, topic = {}, payload = {}",
-                     msg->get_topic(), msg->to_string());
-      }
-    }
-  } catch (mqtt::exception& e) {
-    logger_.Error("failed to connect: [client id = {} , error = {}]",
-                  mqtt_client_.get_client_id(),
-                  e.printable_error(e.get_return_code(), e.get_reason_code(),
-                                    e.get_message()));
-  }
+  worker_thread_.reset(new std::thread(&OneNetClient::RunLoop, this));
 }
 
-void cl::OneNetClient::Disconnect() {}
+void cl::OneNetClient::Disconnect()
+{
+  if (worker_thread_ && worker_thread_->joinable()) {
+    if (mqtt_client_.is_connected()) {
+      mqtt_client_.disconnect();
+    }
+    worker_thread_->join();
+    worker_thread_.reset();
+  }
+}
 
 void cl::OneNetClient::UploadProperties(
     std::map<std::string, cl::Any> properties)
@@ -213,4 +154,83 @@ std::vector<unsigned char> cl::OneNetClient::HmacSha1(
        static_cast<int>(message.length()), digest.data(), &digest_len);
 
   return digest;
+}
+
+void cl::OneNetClient::RunLoop()
+{
+  logger_.Info("start connecting");
+
+  auto caFile = BuildCaFile(kCaCert);
+  if (!caFile.has_value()) {
+    logger_.Error("failed to create ca file: {}", caFile.error());
+    return;
+  }
+
+  // ssl options
+  auto sslopts =
+      mqtt::ssl_options_builder().trust_store(caFile.value()).finalize();
+
+  // connect options
+  auto token = BuildToken();
+  if (!token.has_value()) {
+    logger_.Error("failed to connect: {}", token.error());
+    return;
+  }
+  logger_.Debug("token = {}", token.value());
+  auto connOpts = mqtt::connect_options_builder()
+                      .automatic_reconnect(true)
+                      // MQTT 3.1.1
+                      .mqtt_version(4)
+                      .ssl(std::move(sslopts))
+                      .user_name(product_id_)
+                      .password(token.value())
+                      .finalize();
+
+  try {
+    auto rsp = mqtt_client_.connect(std::move(connOpts));
+    logger_.Info("connect ok");
+    if (!rsp.is_session_present()) {
+      logger_.Info("Subscribing to topics...");
+      std::vector<std::string> topics{
+          fmt::format("$sys/{}/{}/thing/property/post/reply", product_id_,
+                      device_name_),
+          fmt::format("$sys/{}/{}/thing/property/set", product_id_,
+                      device_name_),
+          fmt::format("$sys/{}/{}/thing/property/desired/get/reply",
+                      product_id_, device_name_),
+          fmt::format("$sys/{}/{}/thing/property/desired/delete/reply",
+                      product_id_, device_name_),
+          fmt::format("$sys/{}/{}/thing/property/get", product_id_,
+                      device_name_),
+          fmt::format("$sys/{}/{}/thing/event/post/reply", product_id_,
+                      device_name_),
+          // fmt::format("$sys/{}/{}/thing/service/+/invoke", product_id_,
+          //             device_name_),
+          fmt::format("$sys/{}/{}/thing/sub/property/get", product_id_,
+                      device_name_),
+          fmt::format("$sys/{}/{}/thing/sub/property/set", product_id_,
+                      device_name_),
+      };
+      std::vector<int> qos((int)topics.size(), 0);
+      mqtt_client_.subscribe(topics, qos);
+      logger_.Info("subscribe topics success");
+    }
+    else {
+      logger_.Info("session already present. Skipping subscribe.");
+    }
+
+    while (true) {
+      auto msg = mqtt_client_.consume_message();
+
+      if (msg) {
+        logger_.Info("receive message, topic = {}, payload = {}",
+                     msg->get_topic(), msg->to_string());
+      }
+    }
+  } catch (mqtt::exception& e) {
+    logger_.Error("failed to connect: [client id = {} , error = {}]",
+                  mqtt_client_.get_client_id(),
+                  e.printable_error(e.get_return_code(), e.get_reason_code(),
+                                    e.get_message()));
+  }
 }

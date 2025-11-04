@@ -75,32 +75,25 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(httplib)
 
-# Fetch and make jsoncpp available
+# Fetch and make json available
 FetchContent_Declare(
-    jsoncpp
-    GIT_REPOSITORY https://github.com/open-source-parsers/jsoncpp.git
-    GIT_TAG 1.9.6
+    json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.12.0
 )
-FetchContent_MakeAvailable(jsoncpp)
+FetchContent_MakeAvailable(json)
 
 add_executable(onenet ${SRC_FILES})
 
-target_include_directories(onenet PRIVATE ${eclipse-paho-mqtt-cpp_SOURCE_DIR}/externals/paho-mqtt-c/src)
-target_include_directories(onenet PRIVATE ${eclipse-paho-mqtt-cpp_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_include_directories(onenet PRIVATE ${tl_expected_SOURCE_DIR}/include)
-target_include_directories(onenet PRIVATE ${cxxopts_SOURCE_DIR}/include)
-target_include_directories(onenet PRIVATE ${jsoncpp_SOURCE_DIR}/include)
-target_include_directories(onenet PRIVATE ${fmt_SOURCE_DIR}/include)
-target_include_directories(onenet PRIVATE ${httplib_SOURCE_DIR})
 
+target_link_libraries(onenet PUBLIC nlohmann_json::nlohmann_json)
 target_link_libraries(onenet PUBLIC paho-mqttpp3-static)
 target_link_libraries(onenet PUBLIC expected)
 target_link_libraries(onenet PUBLIC cxxopts)
 target_link_libraries(onenet PUBLIC httplib)
-target_link_libraries(onenet PUBLIC jsoncpp)
 target_link_libraries(onenet PUBLIC fmt)
 
-target_compile_definitions(onenet 
+target_compile_definitions(onenet
                            PRIVATE
                            "CL_ONENET_LOG_LEVEL=${CL_ONENET_LOG_LEVEL}")

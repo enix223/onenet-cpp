@@ -1,7 +1,9 @@
 #pragma once
 
 #include <any>
+#include <atomic>
 #include <map>
+#include <memory>
 #include <string>
 #include <tl/expected.hpp>
 
@@ -57,6 +59,9 @@ class OneNetClient {
   /// @brief enable device level auth or product level auth
   bool device_level_auth_;
 
+  /// @brief internal thread
+  std::unique_ptr<std::thread> worker_thread_;
+
   tl::expected<std::string, std::string> BuildCaFile(
       const std::string& content) const;
 
@@ -65,5 +70,7 @@ class OneNetClient {
   std::vector<unsigned char> HmacSha1(
       const std::vector<unsigned char>& secretBytes,
       const std::string& message) const;
+
+  void RunLoop();
 };
 }  // namespace cl
