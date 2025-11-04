@@ -35,7 +35,7 @@ void SignalHandler(int signalNum)
 
 int main(int argc, const char* const argv[])
 {
-  cl::Logger logger{cl::LogLevel::INFO};
+  cl::Logger logger{(cl::LogLevel)CL_ONENET_LOG_LEVEL};
   cl::CommandLineParser argparser{"onenet", "onenet client"};
   argparser.AddMandatory<std::string>("p,product-id", "product id");
   argparser.AddMandatory<std::string>("s,product-secret", "product secret");

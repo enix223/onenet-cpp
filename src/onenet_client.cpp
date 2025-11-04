@@ -1,5 +1,6 @@
 #include "onenet_client.h"
 
+#include <json/json.h>
 #include <mqtt/client.h>
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
@@ -42,7 +43,7 @@ cl::OneNetClient::OneNetClient(bool deviceLevelAuth, std::string productId,
       product_secret_(productSecret),
       device_name_(deviceName),
       device_secret_(deviceSecret),
-      logger_{LogLevel::DEBUG},
+      logger_{(LogLevel)CL_ONENET_LOG_LEVEL},
       mqtt_client_{kServerUrl, deviceName},
       base64_(base64),
       urlUtil_(urlUtil)
@@ -81,8 +82,45 @@ void cl::OneNetClient::Connect()
 
   try {
     auto rsp = mqtt_client_.connect(std::move(connOpts));
-    logger_.Info("connect result: {}",
-                 rsp.is_session_present() ? "ok" : "fail");
+    logger_.Info("connect ok");
+    if (!rsp.is_session_present()) {
+      logger_.Info("Subscribing to topics...");
+      std::vector<std::string> topics{
+          fmt::format("$sys/{}/{}/thing/property/post/reply", product_id_,
+                      device_name_),
+          fmt::format("$sys/{}/{}/thing/property/set", product_id_,
+                      device_name_),
+          fmt::format("$sys/{}/{}/thing/property/desired/get/reply",
+                      product_id_, device_name_),
+          fmt::format("$sys/{}/{}/thing/property/desired/delete/reply",
+                      product_id_, device_name_),
+          fmt::format("$sys/{}/{}/thing/property/get", product_id_,
+                      device_name_),
+          fmt::format("$sys/{}/{}/thing/event/post/reply", product_id_,
+                      device_name_),
+          // fmt::format("$sys/{}/{}/thing/service/+/invoke", product_id_,
+          //             device_name_),
+          fmt::format("$sys/{}/{}/thing/sub/property/get", product_id_,
+                      device_name_),
+          fmt::format("$sys/{}/{}/thing/sub/property/set", product_id_,
+                      device_name_),
+      };
+      std::vector<int> qos((int)topics.size(), 0);
+      mqtt_client_.subscribe(topics, qos);
+      logger_.Info("subscribe topics success");
+    }
+    else {
+      logger_.Info("session already present. Skipping subscribe.");
+    }
+
+    while (true) {
+      auto msg = mqtt_client_.consume_message();
+
+      if (msg) {
+        logger_.Info("receive message, topic = {}, payload = {}",
+                     msg->get_topic(), msg->to_string());
+      }
+    }
   } catch (mqtt::exception& e) {
     logger_.Error("failed to connect: [client id = {} , error = {}]",
                   mqtt_client_.get_client_id(),
@@ -94,7 +132,7 @@ void cl::OneNetClient::Connect()
 void cl::OneNetClient::Disconnect() {}
 
 void cl::OneNetClient::UploadProperties(
-    std::map<std::string, std::string> properties)
+    std::map<std::string, cl::Any> properties)
 {
 }
 
@@ -119,25 +157,33 @@ tl::expected<std::string, std::string> cl::OneNetClient::BuildCaFile(
 
 tl::expected<std::string, std::string> cl::OneNetClient::BuildToken() const
 {
+  // expired time
   auto expire = std::chrono::system_clock::now() + std::chrono::hours(8760);
   auto et = std::to_string(std::chrono::duration_cast<std::chrono::seconds>(
                                expire.time_since_epoch())
                                .count());
+
+  // resource
   auto res = device_level_auth_ ? fmt::format("products/{}/devices/{}",
                                               product_id_, device_name_)
                                 : fmt::format("products/{}", product_id_);
+
+  // sign secret
   auto secret = device_level_auth_ ? device_secret_ : product_secret_;
   auto secretBytes = base64_->Decode(secret);
   if (secretBytes.size() == 0) {
     return tl::make_unexpected<std::string>("failed to decode secret");
   }
+
+  // create signature
   auto pending =
       et + "\n" + kSigningMethod + "\n" + res + "\n" + kSigningAlgVersion;
   logger_.Debug("string to sign = {}", pending);
-  auto sig_raw = HmacSha1(secret, pending);
+  auto sig_raw = HmacSha1(secretBytes, pending);
   auto signature = base64_->Encode(sig_raw);
   logger_.Debug("signature = {}", signature);
 
+  // build token
   auto versionEscaped = urlUtil_->UrlEscape(kSigningAlgVersion);
   auto resEscape = urlUtil_->UrlEscape(res);
   auto etEscape = urlUtil_->UrlEscape(et);
@@ -156,12 +202,13 @@ tl::expected<std::string, std::string> cl::OneNetClient::BuildToken() const
 }
 
 std::vector<unsigned char> cl::OneNetClient::HmacSha1(
-    const std::string& key, const std::string& message) const
+    const std::vector<unsigned char>& secretBytes,
+    const std::string& message) const
 {
   unsigned int digest_len = SHA_DIGEST_LENGTH;
   std::vector<unsigned char> digest(digest_len);
 
-  HMAC(EVP_sha1(), key.c_str(), static_cast<int>(key.length()),
+  HMAC(EVP_sha1(), secretBytes.data(), static_cast<int>(secretBytes.size()),
        reinterpret_cast<const unsigned char*>(message.c_str()),
        static_cast<int>(message.length()), digest.data(), &digest_len);
 

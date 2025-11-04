@@ -5,6 +5,7 @@
 #include <string>
 #include <tl/expected.hpp>
 
+#include "any.h"
 #include "base64.h"
 #include "logger.h"
 #include "mqtt/client.h"
@@ -29,7 +30,7 @@ class OneNetClient {
 
   void Disconnect();
 
-  void UploadProperties(std::map<std::string, std::string> properties);
+  void UploadProperties(std::map<std::string, cl::Any> properties);
 
  private:
   std::shared_ptr<cl::Base64> base64_;
@@ -61,7 +62,8 @@ class OneNetClient {
 
   tl::expected<std::string, std::string> BuildToken() const;
 
-  std::vector<unsigned char> HmacSha1(const std::string& key,
-                                      const std::string& message) const;
+  std::vector<unsigned char> HmacSha1(
+      const std::vector<unsigned char>& secretBytes,
+      const std::string& message) const;
 };
 }  // namespace cl

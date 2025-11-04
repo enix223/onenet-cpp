@@ -9,6 +9,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-g") 
 # 3. Set the standard optimization flags for Release builds
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")
+# export compile commands
+set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
 
 set(CMAKE_CXX_STANDARD 11)
 # Instructs it to manage the C dependency internally
@@ -28,6 +30,8 @@ set(
   src/base64_openssl.cpp
   src/url_util_httplib.cpp
 )
+
+set(CL_ONENET_LOG_LEVEL 1 CACHE STRING "set program log level (DEBUG=0, INFO=1, WARN=2, ERROR=3)")
 
 include(FetchContent)
 
@@ -71,6 +75,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(httplib)
 
+# Fetch and make jsoncpp available
+FetchContent_Declare(
+    jsoncpp
+    GIT_REPOSITORY https://github.com/open-source-parsers/jsoncpp.git
+    GIT_TAG 1.9.6
+)
+FetchContent_MakeAvailable(jsoncpp)
+
 add_executable(onenet ${SRC_FILES})
 
 target_include_directories(onenet PRIVATE ${eclipse-paho-mqtt-cpp_SOURCE_DIR}/externals/paho-mqtt-c/src)
@@ -78,6 +90,7 @@ target_include_directories(onenet PRIVATE ${eclipse-paho-mqtt-cpp_SOURCE_DIR}/in
 target_include_directories(onenet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${tl_expected_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${cxxopts_SOURCE_DIR}/include)
+target_include_directories(onenet PRIVATE ${jsoncpp_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${fmt_SOURCE_DIR}/include)
 target_include_directories(onenet PRIVATE ${httplib_SOURCE_DIR})
 
@@ -85,4 +98,9 @@ target_link_libraries(onenet PUBLIC paho-mqttpp3-static)
 target_link_libraries(onenet PUBLIC expected)
 target_link_libraries(onenet PUBLIC cxxopts)
 target_link_libraries(onenet PUBLIC httplib)
+target_link_libraries(onenet PUBLIC jsoncpp)
 target_link_libraries(onenet PUBLIC fmt)
+
+target_compile_definitions(onenet 
+                           PRIVATE
+                           "CL_ONENET_LOG_LEVEL=${CL_ONENET_LOG_LEVEL}")
