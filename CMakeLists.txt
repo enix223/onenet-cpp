@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.14.0)
 project(onenet VERSION 0.1.0 LANGUAGES C CXX)
 
+if(POLICY CMP0077)
+    cmake_policy(SET CMP0077 NEW)
+endif()
+
+if(POLICY CMP0135)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 # 1. Set the default CXX flags (C++ compiler)
 # Add -g (debug symbols) and -O0 (no optimization) for the Debug build type.
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
