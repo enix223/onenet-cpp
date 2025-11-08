@@ -39,7 +39,7 @@ class OneNetClient {
   std::shared_ptr<cl::UrlUtil> urlUtil_;
 
   /// @brief mqtt client
-  mqtt::client mqtt_client_;
+  mqtt::async_client mqtt_client_;
 
   /// @brief onenet product id
   std::string product_id_;

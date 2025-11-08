@@ -1,6 +1,7 @@
 #include "onenet_client.h"
 
 #include <mqtt/client.h>
+#include <mqtt/string_collection.h>
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 
@@ -65,10 +66,13 @@ void cl::OneNetClient::Disconnect()
 {
   if (worker_thread_ && worker_thread_->joinable()) {
     if (mqtt_client_.is_connected()) {
-      mqtt_client_.disconnect();
+      logger_.Info("request to disconnect");
+      mqtt_client_.stop_consuming();
+      mqtt_client_.disconnect(3000);
     }
     worker_thread_->join();
     worker_thread_.reset();
+    logger_.Info("disconnected");
   }
 }
 
@@ -187,11 +191,12 @@ void cl::OneNetClient::RunLoop()
                       .finalize();
 
   try {
-    auto rsp = mqtt_client_.connect(std::move(connOpts));
-    logger_.Info("connect ok");
+    mqtt_client_.start_consuming();
+    auto tok = mqtt_client_.connect(std::move(connOpts));
+    auto rsp = tok->get_connect_response();
     if (!rsp.is_session_present()) {
       logger_.Info("Subscribing to topics...");
-      std::vector<std::string> topics{
+      const auto topics = mqtt::string_collection::create({
           fmt::format("$sys/{}/{}/thing/property/post/reply", product_id_,
                       device_name_),
           fmt::format("$sys/{}/{}/thing/property/set", product_id_,
@@ -210,8 +215,8 @@ void cl::OneNetClient::RunLoop()
                       device_name_),
           fmt::format("$sys/{}/{}/thing/sub/property/set", product_id_,
                       device_name_),
-      };
-      std::vector<int> qos((int)topics.size(), 0);
+      });
+      const std::vector<int> qos((int)topics->size(), 0);
       mqtt_client_.subscribe(topics, qos);
       logger_.Info("subscribe topics success");
     }
@@ -219,13 +224,15 @@ void cl::OneNetClient::RunLoop()
       logger_.Info("session already present. Skipping subscribe.");
     }
 
+    logger_.Info("connect ok");
+
     while (true) {
       auto msg = mqtt_client_.consume_message();
-
-      if (msg) {
-        logger_.Info("receive message, topic = {}, payload = {}",
-                     msg->get_topic(), msg->to_string());
+      if (!msg) {
+        break;
       }
+      logger_.Info("receive message, topic = {}, payload = {}",
+                   msg->get_topic(), msg->to_string());
     }
   } catch (mqtt::exception& e) {
     logger_.Error("failed to connect: [client id = {} , error = {}]",

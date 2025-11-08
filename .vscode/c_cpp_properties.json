@@ -11,7 +11,7 @@
             "cppStandard": "gnu++11",
             "intelliSenseMode": "linux-gcc-x64",
             "configurationProvider": "ms-vscode.cmake-tools",
-            "compileCommands": "${workspaceFolder}/out/build/linux/compile_commands.json"
+            "compileCommands": "${workspaceFolder}/out/build/linux-debug/compile_commands.json"
         }
     ],
     "version": 4
